@@ -1,0 +1,120 @@
+﻿@page "/fond"
+@attribute [StreamRendering]
+@using BlazorFrontEnd.Models
+@inject IHttpClientFactory ClientFactory;
+@rendermode RenderMode.InteractiveServer
+<PageTitle>Номерной фонд</PageTitle>
+
+
+    <div class="container-fluid">
+        <div class="column">
+        <div class="col">
+    <h1 class="text-center">Список Номерных Фондов</h1>
+    <table class="table table-bordered table-striped table-sm">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Общее кол-во номеров</th>
+                <th>Статус</th>
+                <th>Цена</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (FondService c in fonds)
+            {
+                <tr>
+                    <td>@c.TableId</td>
+                    <td>@c.TotalNumberOfGuestRooms</td>
+                    @if (c.Status== true)
+                    {
+                        <td>Оплачено</td>
+                    }
+                    else
+                    {
+                        <td>Не Оплачено</td>
+                    }
+                    <td>@c.Price</td>
+                    <td>
+                        <a class="btn btn-primary" @onclick="()=>Edit(c)">Изменить</a>
+                        <a class="btn btn-primary" @onclick="@(async ()=>await Delete(c.TableId))">Удалить</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+ <div class="col">
+    <EditForm Model="@fond" OnSubmit="Submit">
+               @*  <DataAnnotationsValidator />
+                <ValidationSummary /> *@
+        <p>
+            Общее кол-во номеров:<br />
+                        <InputNumber @bind-Value="fond.TotalNumberOfGuestRooms" class="form-control" />
+                    <ValidationMessage For="@(() => fond.TotalNumberOfGuestRooms)" />
+        </p>
+       
+        <p>
+           Цена:<br />
+            <InputNumber @bind-Value="fond.Price" class="form-control"/>
+                    <ValidationMessage For="@(() => fond.Price)" />
+        </p>
+
+                <div class="form-check">
+                    
+                        Статус:
+                        <InputCheckbox class="form-check-input" @bind-Value="fond.Status" />
+                   
+                </div>
+
+                    <button class="btn btn-primary" type="submit">Отправить</button>
+                    <button class="btn btn-primary" type="reset" onclick="Reset">Очистить</button>
+    </EditForm>
+            </div>
+        </div>
+</div>
+@code {
+    List<FondService> fonds = [];
+    FondService fond = new();
+    HttpClient httpClient = new HttpClient();
+
+    void Edit(FondService p)
+    {
+        fond.TableId = p.TableId;
+        fond.TotalNumberOfGuestRooms = p.TotalNumberOfGuestRooms;
+        fond.Status = p.Status;
+        fond.Price = p.Price;
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        httpClient = ClientFactory.CreateClient();
+        httpClient.BaseAddress = new Uri("https://localhost:7043/api/fond");
+        await LoadData();
+    }
+    async Task LoadData()
+    {
+        fonds = await httpClient.GetFromJsonAsync<List<FondService>>
+        (httpClient.BaseAddress) ?? fonds;
+     
+    }
+    async Task Submit()
+    {
+        if (fond.TableId == 0)
+            await httpClient.PostAsJsonAsync(httpClient.BaseAddress, fond);
+        else
+            await httpClient.PutAsJsonAsync(httpClient.BaseAddress, fond);
+        fond.TableId = 0;
+        fond.TotalNumberOfGuestRooms = 0;
+        fond.Status = false;
+        fond.Price = 0;
+        await LoadData();
+    }
+    void Reset()
+    {
+        fond.TableId = 0;
+    }
+    async Task Delete(int id)
+    {
+        await httpClient.DeleteAsync($"{httpClient.BaseAddress}/{id}");
+        await LoadData();
+    }
+}

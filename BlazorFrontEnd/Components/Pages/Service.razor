@@ -1,0 +1,99 @@
+﻿@page "/service"
+@using BlazorFrontEnd.Models
+@inject IHttpClientFactory ClientFactory;
+@rendermode RenderMode.InteractiveServer
+
+<PageTitle>Услуги</PageTitle>
+<div class="container-fluid">
+    <div class="column">
+        <div class="col">
+            <h1 class="text-center">Список услуг</h1>
+            <table class="table table-bordered table-striped table-sm">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Имя</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (ServiceService c in services)
+                    {
+                        <tr>
+                            <td>@c.IdService</td>
+                            <td>@c.Name</td>
+                            <td>@c.Accommodation</td>
+                            <td>
+                                <a class="btn btn-primary" @onclick="()=>Edit(c)">Изменить</a>
+                                <a class="btn btn-primary" @onclick="@(async ()=>await Delete(c.IdService))">Удалить</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col">
+            <EditForm Model="@service" OnSubmit="Submit">
+                @* <DataAnnotationsValidator />
+                <ValidationSummary /> *@
+                <p>
+                    Имя:<br />
+                    <InputText @bind-Value="service.Name" class="form-control" />
+                    <ValidationMessage For="@(() => service.Name)" />
+                </p>
+                <p>
+                    Цена:<br />
+                    <InputNumber @bind-Value="service.Accommodation" class="form-control" />
+                    <ValidationMessage For="@(() => service.Accommodation)" />
+                </p>
+
+                <button class="btn btn-primary" type="submit">Отправить</button>
+                <button class="btn btn-primary" type="reset" onclick="Reset">Очистить</button>
+            </EditForm>
+        </div>
+    </div>
+</div>
+@code {
+    List<ServiceService> services = [];
+    ServiceService service = new();
+    HttpClient httpClient = new HttpClient();
+
+    void Edit(ServiceService p)
+    {
+        service.IdService = p.IdService;
+        service.Name = p.Name;
+        service.Accommodation = p.Accommodation;
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        httpClient = ClientFactory.CreateClient();
+        httpClient.BaseAddress = new Uri("https://localhost:7043/api/service");
+        await LoadData();
+    }
+    async Task LoadData()
+    {
+        services = await httpClient.GetFromJsonAsync<List<ServiceService>>
+        (httpClient.BaseAddress) ?? services;
+    }
+    async Task Submit()
+    {
+        if (service.IdService == 0)
+            await httpClient.PostAsJsonAsync(httpClient.BaseAddress, service);
+        else
+            await httpClient.PutAsJsonAsync(httpClient.BaseAddress, service);
+        service.IdService = 0;
+        service.Name = "";
+        service.Accommodation = 0;
+        await LoadData();
+    }
+    void Reset()
+    {
+        service.IdService = 0;
+    }
+
+    async Task Delete(int id)
+    {
+        await httpClient.DeleteAsync($"{httpClient.BaseAddress}/{id}");
+        await LoadData();
+    }
+}

@@ -1,0 +1,222 @@
+﻿@page "/pricesAndAccommodationsEmployees"
+@using BlazorFrontEnd.Models
+@inject IHttpClientFactory ClientFactory;
+@rendermode RenderMode.InteractiveServer
+
+<PageTitle>Проживание и оплата</PageTitle>
+<div class="container-fluid">
+    <div class="col">
+        <div class="col">
+            <h1 class="text-center">Список Оплаты и проживания</h1>
+            <table class="table table-bordered table-striped table-sm">
+                <thead>
+                    <tr>
+                       
+                        <th>Стоимость</th>
+                        <th>Дата заезда</th>
+                        <th>Дата отъезда</th>
+                        <th>Id Фонда</th>
+                        <th>Id Постояльца</th>
+                        <th>Статус</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (EmployeeLock c in employeeLock)
+                    {
+                        <tr>
+                            <td>@c.Stoimos</td>
+                            <td>@String.Format($"{c.Start:d}")"</td>
+                            <td>@String.Format($"{c.Finish:d}")"</td>
+                            <td>@c.NumberFond</td>
+                            <td>@c.NameEmployee</td>
+                            @if (c.StatusAccommodation == true)
+                            {
+                                <td>Оплачено</td>
+                            }
+                            else
+                            {
+                                <td>Не оплачено</td>
+                            }
+                            <td>
+                                <a class="btn btn-primary" @onclick="()=>Edit(c)">Изменить</a>
+                                <a class="btn btn-primary" @onclick="@(async ()=>await Delete(c.IdPriceAccomodations))">Удалить</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="col">
+            <EditForm Model="@lockemployee" OnSubmit="Submit">
+        
+                <p>
+                    Стоимость:<br />
+                    <InputNumber @bind-Value="lockemployee.Stoimos" class="form-control" />
+                    <ValidationMessage For="@(() => lockemployee.Stoimos)" />
+                </p>
+                <p>
+                    Дата заезда:<br />
+                    <InputDate @bind-Value="lockemployee.Start" class="form-control" />
+                    <ValidationMessage For="@(() => lockemployee.Start)" />
+                </p>
+                <p>
+                    Дата отъезда:<br />
+                    <InputDate @bind-Value="lockemployee.Finish" class="form-control" />
+                    <ValidationMessage For="@(() => lockemployee.Finish)" />
+                </p>
+                <p>
+                    Id Постояльца:<br />
+                    <InputSelect class="form-control" @bind-Value="lockemployee.NameEmployee">
+                        @if (lockemployee.NameEmployee is null)
+                        {
+                            <option selected value="">None</option>
+                        }
+                        @foreach (var emp in Employees)
+                        {
+                            <option value="@emp.IdEmpleyee">
+
+                                @(emp?.Username).
+                            </option>
+                        }
+                    </InputSelect>
+                </p>
+                <p>
+                    Id Фонда:<br />
+                    <InputSelect class="form-control" @bind-Value="lockemployee.NumberFond">
+                        @if (lockemployee.NumberFond is null)
+                        {
+                            <option selected value="">None</option>
+                        }
+                        @foreach (var emp in Fonds)
+                        {
+                            <option value="@emp.TableId">
+                                
+                                @(emp.TotalNumberOfGuestRooms).
+                                @(emp.Status).
+                                @(emp?.Price).
+                            </option>
+                        }
+                    </InputSelect>
+                </p>
+                <div class="form-check">
+                    <InputCheckbox class="form-check-input" @bind-Value="lockemployee.StatusAccommodation" />
+                     Статус оплаты<br />
+                </div>
+                <button class="btn btn-primary" type="submit">Отправить</button>
+                <button class="btn btn-primary" type="reset">Сбросить</button>
+            </EditForm>
+        </div>
+    </div>
+</div>
+@code {
+    List<PricesAndAccommodationsEmployeeService> pricesAndAccommodationsEmployees = [];
+    PricesAndAccommodationsEmployeeService pricesAndAccommodationsEmployee = new();
+    HttpClient httpClient = new HttpClient();
+    List<EmployeeLock> employeeLock = new();
+    EmployeeLock lockemployee = new();
+    public EmployeeService[] Employees { get; set; } = [];
+    public FondService[] Fonds { get; set; } = [];
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        httpClient = ClientFactory.CreateClient();
+        httpClient.BaseAddress = new Uri("https://localhost:7043/api/prices_and_accommodationsEmployees");
+        await LoadData();
+        List<EmployeeService>? list = await httpClient.GetFromJsonAsync<List<EmployeeService>>
+        (new Uri("https://localhost:7043/api/employee"));
+        List<FondService>? list1 = await httpClient.GetFromJsonAsync<List<FondService>>
+       (new Uri("https://localhost:7043/api/fond"));
+        Employees = list!.ToArray();
+        Fonds = list1!.ToArray();
+
+    }
+    void Edit(EmployeeLock p)
+    {
+        lockemployee.IdPriceAccomodations = p.IdPriceAccomodations;
+        lockemployee.Stoimos = p.Stoimos;
+        lockemployee.Start = p.Start;
+        lockemployee.Finish = p.Finish;
+        lockemployee.NumberFond = p.NumberFond;
+        lockemployee.NameEmployee = p.NameEmployee;
+        lockemployee.StatusAccommodation = p.StatusAccommodation;
+
+    }
+   
+    async Task Submit()
+    {
+        if (lockemployee.IdPriceAccomodations == null)
+        {
+            PricesAndAccommodationsEmployeeService cs = new PricesAndAccommodationsEmployeeService();
+            cs.IdEmpleyee = lockemployee.NameEmployee!;
+            cs.IdFond = lockemployee.NumberFond!;
+            cs.Start = lockemployee.Start;
+            cs.Finish = lockemployee.Finish;
+            cs.StatusAccommodation = lockemployee.StatusAccommodation;
+            cs.Stoimos = lockemployee.Stoimos;
+            await httpClient.PostAsJsonAsync(httpClient.BaseAddress, cs);
+        }
+        else
+        {
+            PricesAndAccommodationsEmployeeService? cs = await httpClient.GetFromJsonAsync<PricesAndAccommodationsEmployeeService>
+        (new Uri("https://localhost:7043/api/prices_and_accommodationsEmployees/" + lockemployee.IdPriceAccomodations));
+            cs!.IdEmpleyee = lockemployee.NameEmployee!;
+            cs.IdFond = lockemployee.NumberFond!;
+            cs.Start = lockemployee.Start;
+            cs.Finish = lockemployee.Finish;
+            cs.Stoimos = lockemployee.Stoimos;
+            cs.StatusAccommodation = lockemployee.StatusAccommodation;
+            await httpClient.PutAsJsonAsync(httpClient.BaseAddress, cs);
+        }
+        lockemployee.IdPriceAccomodations = null;
+        lockemployee.NameEmployee = null;
+        lockemployee.NumberFond = null;
+        lockemployee.Start = new DateOnly();
+        lockemployee.Finish = new DateOnly();
+        lockemployee.Stoimos = 0;
+        lockemployee.StatusAccommodation = false;
+        await LoadData();
+    }
+    async Task LoadData()
+    {
+        pricesAndAccommodationsEmployees = await httpClient.GetFromJsonAsync<List<PricesAndAccommodationsEmployeeService>>
+        (httpClient.BaseAddress) ?? pricesAndAccommodationsEmployees;
+        employeeLock.Clear();
+        foreach (PricesAndAccommodationsEmployeeService i in pricesAndAccommodationsEmployees)
+        {
+            EmployeeService? csMan = await httpClient.GetFromJsonAsync<EmployeeService>
+            (new Uri("https://localhost:7043/api/employee/" + i.IdEmpleyee));
+        
+            FondService? csWoman = await httpClient.GetFromJsonAsync<FondService>
+            (new Uri("https://localhost:7043/api/fond/" + i.IdFond));
+    
+            employeeLock.Add(new EmployeeLock
+                {
+                    IdPriceAccomodations = i.IdPriceAccomodations,
+                    NameEmployee = i.IdEmpleyee,
+                    NumberFond = i.IdFond,
+                    Stoimos = i.Stoimos,
+                    Start = i.Start,
+                    Finish = i.Finish,
+                    StatusAccommodation = i.StatusAccommodation
+                });
+        }
+    }
+    async Task Delete(int? id)
+    {
+        await httpClient.DeleteAsync($"{httpClient.BaseAddress}/{id}");
+        employeeLock.Remove(employeeLock.Where(p => p.IdPriceAccomodations == id).FirstOrDefault()!);
+        await LoadData();
+    }
+    class EmployeeLock
+    {
+        public int? IdPriceAccomodations { get; set; }
+        public int? NameEmployee { get; set; }
+        public int? NumberFond { get; set; }
+        public DateOnly? Start { get; set; }
+        public DateOnly? Finish { get; set; }
+        public decimal? Stoimos { get; set; }
+        public bool StatusAccommodation { get; set; }
+    }
+}

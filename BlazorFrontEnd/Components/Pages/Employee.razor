@@ -1,0 +1,92 @@
+﻿@page "/employee"
+
+@rendermode RenderMode.InteractiveServer
+@using BlazorFrontEnd.Models
+@inject IHttpClientFactory ClientFactory;
+
+<PageTitle>Постояльцы</PageTitle>
+
+<div class="container-fluid">
+    <div class="column">
+        <div class="col">
+            <h1 class="text-center">Список Постояльцов</h1>
+            <table class="table table-bordered table-striped table-sm">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Имя</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (EmployeeService c in employees)
+                    {
+                        <tr>
+                            <td>@c.IdEmpleyee</td>
+                            <td>@c.Username</td>
+                            <td>
+                                <a class="btn btn-primary" @onclick="()=>Edit(c)">Изменить</a>
+                                <a class="btn btn-primary" @onclick="@(async ()=>await Delete(c.IdEmpleyee))">Удалить</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col">
+            <EditForm Model="@employee" OnSubmit="Submit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <p>
+                    Имя:<br />
+                    <InputText @bind-Value="employee.Username" class="form-control" />
+                    <ValidationMessage For="@(() => employee.Username)" />
+                </p>
+                <button class="btn btn-primary" type="submit">Отправить</button>
+                <button class="btn btn-primary" type="reset" onclick="Reset">Очистить</button>
+            </EditForm>
+        </div>
+    </div>
+</div>
+@code {
+    List<EmployeeService> employees = [];
+    EmployeeService employee = new();
+    HttpClient httpClient = new HttpClient();
+
+    void Edit(EmployeeService p)
+    {
+        employee.IdEmpleyee = p.IdEmpleyee;
+        employee.Username = p.Username;
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        httpClient = ClientFactory.CreateClient();
+        httpClient.BaseAddress = new Uri("https://localhost:7043/api/employee");
+        await LoadData();
+    }
+    async Task LoadData()
+    {
+        employees = await httpClient.GetFromJsonAsync<List<EmployeeService>>
+        (httpClient.BaseAddress) ?? employees;
+    }
+    async Task Submit()
+    {
+        if (employee.IdEmpleyee == 0)
+            await httpClient.PostAsJsonAsync(httpClient.BaseAddress, employee);
+        else
+            await httpClient.PutAsJsonAsync(httpClient.BaseAddress, employee);
+        employee.IdEmpleyee = 0;
+        employee.Username = "";
+        await LoadData();
+    }
+    void Reset()
+    {
+        employee.IdEmpleyee = 0;
+    }
+
+    async Task Delete(int id)
+    {
+        await httpClient.DeleteAsync($"{httpClient.BaseAddress}/{id}");
+        await LoadData();
+    }
+}

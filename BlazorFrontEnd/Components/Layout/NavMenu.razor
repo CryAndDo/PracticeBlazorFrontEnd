@@ -1,0 +1,40 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid ">
+        <a class="navbar-brand" href="">Гостиница</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable " onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Сотрудники
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="employee">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Постояльцы
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="fond">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Номерной фонд
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="service">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Сервис
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link h-25" href="pricesAndAccommodationsEmployees">
+                <p class="flex-nowrap">  <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Цена и оплата для постояльцев</p>
+            </NavLink>
+        </div>
+    </nav>
+</div>
+
